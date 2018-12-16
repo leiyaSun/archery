@@ -19,7 +19,9 @@ from sql.utils.workflow import Workflow
 from sql.utils.sql_review import can_execute, can_timingtask, can_cancel
 from common.utils.const import Const, WorkflowDict
 from sql.utils.group import user_groups, user_instances
-from common.utils.aes_decryptor import  get_out_ip
+from common.utils.aes_decryptor import  get_out_ip, generate_random_password
+from sql.utils.dao import Dao
+
 
 import logging
 
@@ -40,6 +42,8 @@ def sqlworkflow(request):
 # 提交SQL的页面
 @permission_required('sql.sql_submit', raise_exception=True)
 def submit_sql(request):
+
+
     user = request.user
     # 获取组信息
     group_list = user_groups(user)
@@ -49,6 +53,7 @@ def submit_sql(request):
 
     context = {'active_user': active_user, 'group_list': group_list}
     return render(request, 'sqlsubmit.html', context)
+
 
 
 # 展示SQL工单详细页面
@@ -307,11 +312,44 @@ def instanceuser(request):
 # 实例用户管理页面
 @permission_required('sql.menu_instance', raise_exception=True)
 def instanceusercreate(request):
-    instances = [instance.instance_name for instance in user_instances(request.user, 'all')]
-    exteral_ip = get_out_ip()
+    if request.GET:
 
-    context = {'instances': instances, 'user_host': exteral_ip}
-    return render(request, 'instanceusercreate.html', context)
+        instances = [instance.instance_name for instance in user_instances(request.user, 'all')]
+        exteral_ip = get_out_ip()
+
+        context = {'instances': instances, 'user_host': exteral_ip}
+        return render(request, 'instanceusercreate.html', context)
+    else:
+        user_name = request.POST.get('user', '')
+        password = request.POST.get('password', '')
+        privileges = request.POST.get('privilegs')
+        instance_name = request.POST.get('instance_name')
+        user_host = request.POST.get('user_host')
+        schema = request.POST.get('schema')
+        tables = request.POST.get('tables')
+        if user_name =='' and privileges=='' and user_host =='':
+            error = "info is not empty"
+
+        if password =='':
+            password = generate_random_password(32)
+        if schema is None or schema =='':
+            schema = '*'
+        data = {}
+        data["user"] = user_name
+        data['host'] = user_host
+        data['schema'] = schema
+        data['tables'] = tables
+        result = {'status': 0, 'msg': 'ok', 'data': []}
+
+        try:
+            # 取出该实例实例的连接方式，为了后面连进去获取所有的表
+            tb_list = Dao(instance_name=instance_name).mysql_createuser(data)
+            # 要把result转成JSON存进数据库里，方便SQL单子详细信息展示
+            result['data'] = tb_list
+        except Exception as msg:
+            result['status'] = 1
+            result['msg'] = str(msg)
+        return
 
 
 # 实例用户管理页面

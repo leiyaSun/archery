@@ -169,3 +169,44 @@ class Dao(object):
             cursor.close()
             conn.close()
         return result
+    def mysql_createuser(self, data):
+        result = {}
+        user = data["user"]
+        password = data['passwrod']
+        schemas = data['schema']
+        tables = data['tables']
+        user_host = data['user_host']
+        privilege = data['privilegs']
+        if privilege=='select':
+            privilege = "select"
+        elif privilege == "dml":
+            privilegs = "insert,update, index "
+        elif privilege == "ddl":
+            privilege == 'create,alter, index'
+        elif privilege == "dba":
+            privilege == "insert,update,create,alter,process,replication client,select,delete,drop,reload,flush"
+        elif privilege == "rpl":
+            privilege =' select,replication client,replication slave'
+        elif privilege =="backup":
+            privilege = 'select,reload,flush ,process'
+        else:
+            privilege = 'all'
+
+        try:
+            conn = MySQLdb.connect(host=self.host, port=self.port, user=self.user, passwd=self.password, db='mysql',
+                                   charset='utf8')
+            cursor = conn.cursor()
+            cursor.execute("create user '%s'@'%s' identified by '%s' "%(user,user_host,password))
+            for item in schemas:
+                cursor.execute("grant %s on '%s'.* to '%s'@'%h' "%(privilege, item, user, user_host))
+            if tables:
+                for item in tables:
+                    cursor.execute("grant delete on %s to '%s'@'%h" %(item,user,user_host))
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            result['Error'] = str(e)
+        else:
+
+            cursor.close()
+            conn.close()
+        return result
