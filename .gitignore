@@ -8,3 +8,4 @@ archery/settings.py.github
 archery/settings.py.dev
 sql/migrations/
 venv
+docker/

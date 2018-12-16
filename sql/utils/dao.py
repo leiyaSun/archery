@@ -70,6 +70,27 @@ class Dao(object):
             conn.close()
         return tb_list
 
+
+    # 连进指定的mysql实例里，读取所有tables并返回
+    def get_all_table_by_dbs(self, db_name):
+        tb_lists = []
+        for dbname in db_name.split(','):
+            try:
+                conn = MySQLdb.connect(host=self.host, port=self.port, user=self.user, passwd=self.password, db=dbname,
+                                       charset='utf8')
+                cursor = conn.cursor()
+                sql = "show tables"
+                cursor.execute(sql)
+                tb_list = [dbname+'.'+row[0] for row in cursor.fetchall() if row[0] not in ['test']]
+                tb_lists.extend(tb_list)
+            except Exception as e:
+                logger.error(traceback.format_exc())
+                raise Exception(e)
+            else:
+                cursor.close()
+                conn.close()
+        return tb_lists
+
     # 连进指定的mysql实例里，读取所有Columns并返回
     def get_all_columns_by_tb(self, db_name, tb_name):
         try:
@@ -87,6 +108,8 @@ class Dao(object):
             cursor.close()
             conn.close()
         return col_list
+
+
 
     # 连进指定的mysql实例里，执行sql并返回
     def mysql_query(self, db_name=None, sql='', limit_num=0):

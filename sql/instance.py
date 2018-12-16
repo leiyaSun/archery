@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import permission_required
 from django.http import HttpResponse
 
 from common.config import SysConfig
-from common.utils.aes_decryptor import Prpcrypt
+from common.utils.aes_decryptor import Prpcrypt, generate_random_password
 from common.utils.extend_json_encoder import ExtendJSONEncoder
 from sql.utils.dao import Dao
 from .models import Instance
@@ -155,7 +155,7 @@ def get_table_name_list(request):
 
     try:
         # 取出该实例实例的连接方式，为了后面连进去获取所有的表
-        tb_list = Dao(instance_name=instance_name).get_all_table_by_db(db_name)
+        tb_list = Dao(instance_name=instance_name).get_all_table_by_dbs(db_name)
         # 要把result转成JSON存进数据库里，方便SQL单子详细信息展示
         result['data'] = tb_list
     except Exception as msg:
@@ -180,4 +180,18 @@ def get_column_name_list(request):
     except Exception as msg:
         result['status'] = 1
         result['msg'] = str(msg)
+    return HttpResponse(json.dumps(result), content_type='application/json')
+
+
+
+# 获取数据库的表集合
+def get_auto_password(request):
+    result = {'status': 0, 'msg': 'ok', 'data': []}
+    try:
+        data = generate_random_password(32)
+        result['data'] = data
+    except Exception as msg:
+        result['status'] = 1
+        result['msg'] = str(msg)
+
     return HttpResponse(json.dumps(result), content_type='application/json')

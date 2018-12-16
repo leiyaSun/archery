@@ -40,6 +40,8 @@ urlpatterns = [
     path('grouprelations/<int:group_id>/', views.groupmgmt),
     path('instance/', views.instance),
     path('instanceuser/<int:instance_id>/', views.instanceuser),
+    path('instance/usercreate2/<int:instance_id>/', views.instanceusercreate2),
+    path('instance/usercreate/', views.instanceusercreate),
     path('binlog2sql/', views.binlog2sql),
     path('schemasync/', views.schemasync),
     path('config/', views.config),
@@ -74,7 +76,7 @@ urlpatterns = [
     path('instance/getdbNameList/', instance.get_db_name_list),
     path('instance/getTableNameList/', instance.get_table_name_list),
     path('instance/getColumnNameList/', instance.get_column_name_list),
-
+    path('instance/getautopassword/', instance.get_auto_password),
     path('query/', query.query),
     path('query/querylog/', query.querylog),
     path('query/explain/', query.explain),
@@ -98,4 +100,5 @@ urlpatterns = [
     path('db_diagnostic/kill_session/', db_diagnostic.kill_session),
     path('db_diagnostic/tablesapce/', db_diagnostic.tablesapce),
     path('db_diagnostic/trxandlocks/', db_diagnostic.trxandlocks),
+
 ]

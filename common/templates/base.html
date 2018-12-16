@@ -16,6 +16,7 @@
     <link href="{% static 'font-awesome/css/font-awesome.min.css' %}" rel="stylesheet">
     <link href="{% static 'dist/css/bootstrap-select.css' %}" rel="stylesheet">
     <link href="{% static 'bootstrap-table/css/bootstrap-table.min.css' %}" rel="stylesheet">
+    <link href="{% static  'select2/css/select2.min.css' %}" rel="stylesheet" />
     {% for jsfile_name in script_list %}
         <script src="{{ host }}/{{ jsfile_name }}.js"></script>
     {% endfor %}
@@ -157,6 +158,12 @@
                                         <a href="/instance/">实例列表</a>
                                     </li>
                                 {% endif %}
+                                {% if perms.sql.menu_instance %}
+                                    <li>
+                                        <a href="/instance/usercreate/">实例用户</a>
+                                    </li>
+                                {% endif %}
+
                                 {% if perms.sql.menu_dbdiagnostic %}
                                     <li>
                                         <a href="/dbdiagnostic/">会话管理</a>

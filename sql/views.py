@@ -19,6 +19,7 @@ from sql.utils.workflow import Workflow
 from sql.utils.sql_review import can_execute, can_timingtask, can_cancel
 from common.utils.const import Const, WorkflowDict
 from sql.utils.group import user_groups, user_instances
+from common.utils.aes_decryptor import  get_out_ip
 
 import logging
 
@@ -298,9 +299,25 @@ def instance(request):
 
 # 实例用户管理页面
 @permission_required('sql.menu_instance', raise_exception=True)
-def instanceuser(request, instance_id):
-    return render(request, 'instanceuser.html', {'instance_id': instance_id})
+def instanceuser(request):
+    return render(request, 'instanceuser.html')
 
+
+
+# 实例用户管理页面
+@permission_required('sql.menu_instance', raise_exception=True)
+def instanceusercreate(request):
+    instances = [instance.instance_name for instance in user_instances(request.user, 'all')]
+    exteral_ip = get_out_ip()
+
+    context = {'instances': instances, 'user_host': exteral_ip}
+    return render(request, 'instanceusercreate.html', context)
+
+
+# 实例用户管理页面
+@permission_required('sql.menu_instance', raise_exception=True)
+def instanceusercreate2(request, instance_id):
+    return render(request, 'instanceusercreate.html', {'instance_id': instance_id})
 
 # binlog2sql页面
 @permission_required('sql.menu_binlog2sql', raise_exception=True)

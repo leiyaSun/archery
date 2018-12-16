@@ -60,13 +60,15 @@ class GroupRelations(models.Model):
 
 # 各个线上实例配置
 class Instance(models.Model):
+    ENV_SELECT =(("1", "DEV"),("2", "UAT"),("3", "PRT"))
     instance_name = models.CharField('实例名称', max_length=50, unique=True)
     type = models.CharField('实例类型', max_length=6, choices=(('master', '主库'), ('slave', '从库')))
     db_type = models.CharField('数据库类型', max_length=10, choices=(('mysql', 'mysql'),))
     host = models.CharField('实例连接', max_length=200)
     port = models.IntegerField('端口', default=3306)
+    env = models.CharField(choices=ENV_SELECT, default='1', max_length=2)
     user = models.CharField('用户名', max_length=100)
-    password = models.CharField('密码', max_length=300)
+    password = models.CharField('密码', max_length=128)
     create_time = models.DateTimeField('创建时间', auto_now_add=True)
     update_time = models.DateTimeField('更新时间', auto_now=True)
 
@@ -83,6 +85,34 @@ class Instance(models.Model):
         pc = Prpcrypt()  # 初始化
         self.password = pc.encrypt(self.password)
         super(Instance, self).save(*args, **kwargs)
+
+
+class InstanceUser(models.Model):
+    instance = models.ForeignKey('Instance', on_delete=models.CASCADE)
+    user_host = models.CharField('实例连接', max_length=200)
+    user = models.CharField('用户名', max_length=100)
+    password = models.CharField('密码', max_length=300)
+    schema = models.TextField()
+    tables = models.TextField()
+    privilegs = models.TextField()
+    create_time = models.DateTimeField('创建时间', auto_now_add=True)
+    update_time = models.DateTimeField('更新时间', auto_now=True)
+    status = models.IntegerField(default=0)
+
+
+    def __str__(self):
+        return "{}@{}".format(self.user,self.user_host)
+
+    class Meta:
+        managed = True
+        db_table = 'sql_instance_user'
+        verbose_name = u'配置'
+        verbose_name_plural = u'配置'
+
+    def save(self, *args, **kwargs):
+        pc = Prpcrypt()  # 初始化
+        self.password = pc.encrypt(self.password)
+        super(InstanceUser, self).save(*args, **kwargs)
 
 
 # 存放各个SQL上线工单的详细内容，可定期归档或清理历史数据，也可通过alter table workflow row_format=compressed; 来进行压缩

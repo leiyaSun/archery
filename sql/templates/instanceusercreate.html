@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="row clearfix">
+
+        <form id="form-submitsql" action="/instance/usercreate/" method="post" class="form-horizontal" role="form">
+            {% csrf_token %}
+             <div class="col-md-3 column">
+                 <div class="form-group">
+                     <select id="id_instance" name="instance_name"
+                            class="selectpicker show-tick form-control bs-select-hidden" data-name="实例"
+                            data-live-search="true" data-placeholder="请选择实例" required>
+                         <option value="" disabled="" selected="selected">请选择实例:</option>
+                         {% for instance_name in instances %}
+                            {% if instance_name != 'mycat' %}
+                                <option value="{{ instance_name }}">{{ instance_name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                     </select>
+                 </div>
+                 <div class="form-group">
+                    <input id="id_user_host" type="text" name="user_host" class="form-control"
+                           data-name="用户名称" data-placeholder="请输入用户名称" placeholder="请输入用户名称"
+                           required>
+                 </div>
+                 <div class="form-group">
+                    <input id="id_user" type="text" name="user" class="form-control"
+                           data-name="用户主机" data-placeholder="用户主机" placeholder="用户主机" value="{{ user_host }}"
+                           required>
+                 </div>
+                 <div class="form-group">
+                    <input id="id_password" type="password" name="password" class="form-control"
+                           data-name="用户密码" data-placeholder="用户密码自动生成" placeholder="用户密码自动生成"
+                           required>
+                        <button id="general_password" type="button" class="btn btn-info" data-dismiss="modal">生成</button>
+                    </button>
+                 </div>
+                 <div class="form-group">
+                     <select id="id_schema" name="schema"
+                            class="select2" data-name="库"
+                            data-live-search="true" data-placeholder="库" multiple="multiple" >
+                         <option value="" disabled="" selected="selected">请选择库:</option>
+                     </select>
+                 </div>
+
+                 <div class="form-group">
+                     <select id="id_privilegs" name="privilegs"  class="select2">
+                             <option value="all" >all</option>
+                             <option value="backup" >backup</option>
+                             <option value="repl">repl</option>
+                             <option value="dba">dba</option>
+                             <option value="dml">dml</option>
+                             <option value="ddl" >ddl</option>
+                             <option value="query">query</option>
+                     </select>
+                 </div>
+                 <div class="form-group">
+                    <input type="button" id="btn-autoreview" class="btn btn-danger" value="cancel"/>
+                    <input id="btn-submitsql" type="button" class="btn btn-success" value="save"/>
+                 </div>
+            </div>
+            <div class="col-md-9 column">
+
+                     <div class="form-group">
+                         <select id="id_tables" name="tables"  multiple="multiple"
+                                class="select2 ace_editor" style="min-height:350px;width: 100%;" data-name="删除表"
+                                data-live-search="true" data-placeholder="删除表" >
+                             <option value="" disabled="" selected="selected">请选择删除表:</option>
+                         </select>
+                     </div>
+
+            </div>
+        </form>
+    </div>
+
+
+{% endblock content %}
+{% block js %}
+    {% load staticfiles %}
+    <script src="{% static 'bootstrap-table/js/bootstrap-table-export.min.js' %}"></script>
+    <script src="{% static 'bootstrap-table/js/tableExport.min.js' %}"></script>
+    <script src="{% static 'dist/js/sql-formatter.min.js' %}"></script>
+    <script src="{% static 'select2/js/select2.min.js'%}"></script>
+    <<script>
+        // 实例变更获取数据库补全提示
+        $("#id_instance").change(function () {
+            //将数据通过ajax提交给获取db_name
+            $.ajax({
+                type: "post",
+                url: "/instance/getdbNameList/",
+                dataType: "json",
+                data: {
+                    instance_name: $("#id_instance").val()
+                },
+                complete: function () {
+                    var pathname = window.location.pathname;
+                    if (pathname === "/editsql/") {
+                        //填充库名
+                        $('#id_schema').selectpicker();
+                        var myObject = {};
+                        myObject.db_name = sessionStorage.getItem('editDbname');
+                        if (myObject.db_name) {
+                            $("#id_schema").selectpicker('val', myObject.db_name);
+                        }
+                    }
+                },
+                success: function (data) {
+                    if (data.status === 0) {
+                        var result = data.data;
+                        $("#id_schema").empty();
+                        var dbs = [];
+                        for (var i = 0; i < result.length; i++) {
+                            var name = "<option value=\"" + result[i] + "\">" + result[i] + "</option>";
+                            $("#id_schema").append(name);
+                            dbs.push({
+                                name: result[i],
+                                value: result[i],
+                                caption: result[i],
+                                meta: 'databases',
+                                score: '100'
+                            })
+                        }
+                        $("#id_schema").prepend("<option value=\"is-empty\" disabled=\"\" selected=\"selected\">请选择数据库:</option>");
+                        $('#id_schema').selectpicker('render');
+                        $('#id_schema').selectpicker('refresh');
+                        //自动补全提示
+                        setCompleteData(dbs)
+                    } else {
+                        alert(data.msg);
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            });
+        });
+        //数据库变更获取表名称
+        $("#id_schema").change(function () {
+            //将数据通过ajax提交给获取db_name
+            $.ajax({
+                type: "post",
+                url: "/instance/getTableNameList/",
+                dataType: "json",
+                data: {
+                    instance_name: $("#id_instance").val(),
+                    db_name: $("#id_schema").val()
+                },
+
+                complete: function () {
+                },
+                success: function (data) {
+                    if (data.status === 0) {
+                        var result = data.data;
+                        $("#id_tables").empty();
+                        for (var i = 0; i < result.length; i++) {
+                            var name = "<option>" + result[i] + "</option>";
+                            $("#id_tables").append(name);
+                        }
+                        $("#id_tables").prepend("<option value=\"is-empty\" disabled=\"\" selected=\"selected\">查看表结构:</option>");
+                        $('#id_tables').selectpicker('render');
+                        $('#id_tables').selectpicker('refresh');
+                        //自动补全提示
+                        setTablesCompleteData(result)
+                    } else {
+                        alert(data.msg);
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            });
+        });
+    </script>
+    <!--validate -->
+    <script>
+        function validateForm(element) {
+            var result = true;
+            element.find('[required]').each(
+                function () {
+                    var fieldElement = $(this);
+                    //如果为null则设置为''
+                    var value = fieldElement.val() || '';
+                    if (value) {
+                        value = value.trim();
+                    }
+                    if (!value || value === fieldElement.attr('data-placeholder')) {
+                        alert(fieldElement.attr('data-placeholder'));
+                        result = false;
+                        return result;
+                    }
+                }
+            );
+            return result;
+        }
+
+
+
+        $("#btn-submitsql").click(function () {
+            //获取form对象，判断输入，通过则提交
+            var formSubmit = $("#form-submitsql");
+            var sqlContent = editor.getValue();
+            $("#sql_content").val(sqlContent);
+            if (validateForm(formSubmit)) {
+                //判断是否需要弹出提示
+                var CheckWarningCount = sessionStorage.getItem('CheckWarningCount');
+                var CheckErrorCount = sessionStorage.getItem('CheckErrorCount');
+                $("#CheckWarningCount").text(CheckWarningCount);
+                $("#CheckErrorCount").text(CheckErrorCount);
+                if (CheckWarningCount > 0 || CheckErrorCount > 0) {
+                    $('#submitComfirm').modal('show');
+                }
+                else {
+                    formSubmit.submit();
+                    $('input[type=button]').addClass('disabled');
+                    $('input[type=button]').prop('disabled', true);
+                }
+            }
+        });
+
+        $("#submitsqlcomfirm").click(function () {
+            //获取form对象，判断输入，通过则提交
+            var formSubmit = $("#form-submitsql");
+            var sqlContent = editor.getValue();
+            $("#sql_content").val(sqlContent);
+            formSubmit.submit();
+            $('input[type=button]').addClass('disabled');
+            $('input[type=button]').prop('disabled', true);
+        });
+
+        $("#general_password").click(function () {
+            $.ajax({
+                type: "get",
+                url: "/instance/getautopassword/",
+                dataType: "json",
+
+                success: function (data) {
+                    if (data.status === 0) {
+                        var result = data['data'];
+                        $("#id_password").empty();
+                        $("#id_password").attr("value",result);
+
+                    } else {
+                        alert(data.msg);
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            });
+        });
+
+        $("#btn-reset").click(function () {
+            editor.setValue("");
+            //重置选择器
+            $(".selectpicker").selectpicker('val', '');
+            $(".selectpicker").selectpicker('render');
+            $(".selectpicker").selectpicker('refresh');
+        });
+
+        $("#audit_auth_groups").change(function audit_auth_groups() {
+            var audit_auth_groups = $(this).val();
+            $("div#" + audit_auth_groups).hide();
+        });
+    </script>
+
+    <!--init -->
+    <script>
+        $(document).ready(function () {
+            // 初始化上传控件
+            init_upload();
+            // 提示信息
+            $("#id_schema").select2({);
+            $("#id_tables").select2();
+            $("#id_privilegs").select2();
+
+            //editor.clearSelection();
+            // 禁用提交按钮，点击检测后才激活
+            $("#btn-submitsql").addClass('disabled');
+            $("#btn-submitsql").prop('disabled', true);
+            // 清空id, 只允许新增不允许修改
+            sessionStorage.removeItem('editWorkflowDetailId');
+            var pathname = window.location.pathname;
+            if (pathname == "/editsql/") {
+                $("#workflow_id").val(sessionStorage.getItem('editWorkflowDetailId'));
+                $("#workflow_name").val(sessionStorage.getItem('editWorkflowNname'));
+                $("#group_name").val(sessionStorage.getItem('editGroup'));
+                editor.setValue(sessionStorage.getItem('editSqlContent'));
+                editor.clearSelection();
+                $("#is_backup").val(sessionStorage.getItem('editIsbackup'));
+            }
+            else if (pathname === "/submitotherinstance/") {
+                $("#workflow_name").val(sessionStorage.getItem('editWorkflowNname'));
+                $("#group_name").val(sessionStorage.getItem('editGroup'));
+                editor.setValue(sessionStorage.getItem('editSqlContent'));
+                editor.clearSelection();
+                $("#is_backup").val(sessionStorage.getItem('editIsbackup'));
+            }
+            else if (pathname === "/submitsql/") {
+                $("#workflow_name").val(sessionStorage.removeItem('editWorkflowNname'));
+                sessionStorage.removeItem('editGroup');
+                sessionStorage.removeItem('editSqlContent');
+                editor.clearSelection();
+                sessionStorage.removeItem('editClustername');
+                sessionStorage.removeItem('editIsbackup');
+            }
+            if ($("#group_name").val()) {
+                $("#group_name").trigger("change");
+            }
+
+        });
+    </script>
+{% endblock %}
