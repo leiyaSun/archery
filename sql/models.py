@@ -63,7 +63,7 @@ class Instance(models.Model):
     ENV_SELECT =(("1", "DEV"),("2", "UAT"),("3", "PRT"))
     instance_name = models.CharField('实例名称', max_length=50, unique=True)
     type = models.CharField('实例类型', max_length=6, choices=(('master', '主库'), ('slave', '从库')))
-    db_type = models.CharField('数据库类型', max_length=10, choices=(('mysql', 'mysql'),))
+    db_type = models.CharField('数据库类型', max_length=10, choices=(('mysql', 'mysql'),('mssql', 'mssql'),('oracle', 'oracle')))
     host = models.CharField('实例连接', max_length=200)
     port = models.IntegerField('端口', default=3306)
     env = models.CharField(choices=ENV_SELECT, default='1', max_length=2)
@@ -567,3 +567,28 @@ class SlowQueryHistory(models.Model):
         index_together = ('hostname_max', 'ts_min')
         verbose_name = u'慢日志明细'
         verbose_name_plural = u'慢日志明细'
+
+
+# MysqlInstall
+class MysqlInstall(models.Model):
+    INSTALL_TYPE_CHOICE =(("single","single"),("many","many"))
+    ssh_host = models.CharField(max_length=32, primary_key=True)
+    ssh_port = models.IntegerField()
+    ssh_lhost = models.CharField(max_length=32)
+    ssh_user = models.CharField(max_length=32)
+    ssh_password = models.CharField(max_length=32)
+    ssh_keyfile = models.CharField(max_length=255)
+    mysql_version = models.CharField(max_length=255, default='5.7.24')
+    install_type= models.CharField(max_length=16,choices=INSTALL_TYPE_CHOICE, default='single')
+    work_dir = models.CharField(max_length=128, default="/tmp")
+    install_port = models.CharField(max_length=128, default='3306')
+    install_base = models.CharField(max_length=128, default='/opt/mysql')
+    install_data = models.CharField(max_length=128,default='/data/mysql')
+    status = models.CharField(max_length=8)
+    comments = models.TextField(blank=True, null=True)
+    class Meta:
+        managed = False
+        db_table = 'db_mysql_install'
+        verbose_name = u'MySQL安装'
+        verbose_name_plural = u'MySQL安装'
+

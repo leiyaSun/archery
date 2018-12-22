@@ -5,7 +5,7 @@ from django.contrib.auth.admin import UserAdmin
 # Register your models here.
 from .models import Users, Instance, SqlWorkflow, QueryLog, DataMaskingColumns, DataMaskingRules, \
     AliyunAccessKey, AliyunRdsConfig, SqlGroup, GroupRelations, QueryPrivileges, WorkflowAudit, WorkflowLog,\
-    InstanceUser
+    InstanceUser, MysqlInstall
 
 
 # 用户管理
@@ -134,3 +134,11 @@ class AliAccessKeyAdmin(admin.ModelAdmin):
 class AliRdsConfigAdmin(admin.ModelAdmin):
     list_display = ('instance_name', 'rds_dbinstanceid', 'is_enable')
     search_fields = ['instance_name', 'rds_dbinstanceid']
+
+
+
+# 阿里云实例配置信息
+@admin.register(MysqlInstall)
+class MysqlInstalldmin(admin.ModelAdmin):
+    list_display = ('ssh_host', 'ssh_user', 'status')
+    search_fields = ['host']

@@ -371,3 +371,9 @@ def schemasync(request):
     # 获取实例列表
     instances = [instance.instance_name for instance in user_instances(request.user, 'all')]
     return render(request, 'schemasync.html', {'instances': instances})
+
+
+# 实例管理页面
+@permission_required('sql.menu_instance', raise_exception=True)
+def installmysql(request):
+    return render(request, 'mysqlinstall.html')

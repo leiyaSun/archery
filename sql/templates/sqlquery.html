@@ -5,7 +5,7 @@
         <form id="form-sqlquery" action="/sqlquery/" method="post" class="form-horizontal" role="form">
             {% csrf_token %}
             <div class="col-md-9 column">
-                <pre id="sql_content_editor" class="ace_editor " style="min-height:350px"></pre>
+                <textarea id="sql_content_editor" class="ace_editor " style="min-height:350px"></textarea>
             </div>
             <div class="col-md-3 column">
                 <div class="form-group">
@@ -87,7 +87,11 @@
     <script src="{% static 'ace/ace_init.js' %}"></script>
     <script src="{% static 'bootstrap-table/js/bootstrap-table-export.min.js' %}"></script>
     <script src="{% static 'bootstrap-table/js/tableExport.min.js' %}"></script>
-    <script src="{% static 'dist/js/sql-formatter.min.js' %}"></script>
+    <script src="{% static 'dist/js/sql-formatter.min.js' %}"></script> s  sql-hint.js
+    <script src="{% static 'codemirror/js/codemirror.js' %}"></script>
+    <script src="{% static 'codemirror/js/how-hint.js' %}"></script>
+    <script src="{% static 'codemirror/js/sql-hint.js ' %}"></script>
+    <script src="{% static 'codemirror/js/sql.js' %}"></script>
     <!-- 查询历史  -->
     <script>
         //获取查询列表
@@ -611,6 +615,9 @@
             sessionStorage.setItem('tab_num', 0);
             //设置当前激活的标签id
             sessionStorage.setItem('active_li_id', 'sqllog_tab');
+            var editor = CodeMirror.fromTextArea(sql_content_editor, {
+                lineNumbers: true
+            });
             //默认获取查询历史
             get_querylog();
 

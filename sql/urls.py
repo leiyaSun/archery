@@ -4,7 +4,7 @@ from django.urls import path
 
 from common import auth, config, workflow, dashboard, check
 from sql import views, sql_workflow, query, slowlog, instance, db_diagnostic, sql_tuning, group, \
-    sql_advisor, binlog2sql, soar
+    sql_advisor, binlog2sql, soar, installmysql
 from sql.utils import jobs
 
 urlpatterns = [
@@ -100,5 +100,7 @@ urlpatterns = [
     path('db_diagnostic/kill_session/', db_diagnostic.kill_session),
     path('db_diagnostic/tablesapce/', db_diagnostic.tablesapce),
     path('db_diagnostic/trxandlocks/', db_diagnostic.trxandlocks),
+
+    path('installmysql/', views.installmysql),
 
 ]
